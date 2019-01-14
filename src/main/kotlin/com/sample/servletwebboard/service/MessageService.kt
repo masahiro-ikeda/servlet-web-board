@@ -3,26 +3,25 @@ package com.sample.servletwebboard.service
 import com.sample.servletwebboard.dao.MessageDao
 import com.sample.servletwebboard.entity.MessageEntity
 import java.sql.Connection
-import java.sql.Date
 import java.sql.DriverManager
 import java.sql.SQLException
+import java.sql.Timestamp
 
 class MessageService {
 
     fun getMessage(): List<MessageEntity> {
+
         var con: Connection? = null
-        var list: MutableList<MessageEntity> = mutableListOf()
 
         try {
             con = getConnection()
             val dao: MessageDao = MessageDao(con)
+            return dao.selectMessage()
 
-            list = dao.selectMessage()
-
-            return list
         } catch (e: SQLException) {
+            println("log [error:getMessage]")
             e.printStackTrace()
-            throw Exception()
+            throw RuntimeException()
         } finally {
             close(con!!)
         }
@@ -31,6 +30,7 @@ class MessageService {
     fun postMessage(name: String, text: String) {
 
         var con: Connection? = null
+
         try {
             con = getConnection()
             con.autoCommit = false
@@ -41,7 +41,7 @@ class MessageService {
                     dao.getNextId(),
                     name,
                     text,
-                    Date(java.util.Date().time)
+                    Timestamp(System.currentTimeMillis())
             )
 
             if (dao.insertMessage(message)) {
@@ -50,8 +50,10 @@ class MessageService {
                 con.rollback()
             }
         } catch (e: SQLException) {
+            println("log [error:postMessage]")
             con!!.rollback()
             e.printStackTrace()
+            throw RuntimeException()
         } finally {
             close(con!!);
         }
@@ -59,10 +61,11 @@ class MessageService {
 
     private fun getConnection(): Connection {
 
-        val url: String = "jdbc:mysql://localhost/develop"
-        val user: String = "root"
-        val pass: String = "pass"
+        val url:  String = "jdbc:mysql://db/develop?useSSL=false"
+        val user: String = "dev_user"
+        val pass: String = "dev_pass"
 
+        Class.forName("com.mysql.jdbc.Driver")
         return DriverManager.getConnection(url, user, pass)
     }
 

@@ -1,10 +1,10 @@
 package com.sample.servletwebboard.entity
 
-import java.sql.Date
+import java.sql.Timestamp
 
 data class MessageEntity(
         val id: Int,
         val name: String,
         val text: String,
-        val dateTime: Date
+        val created_at: Timestamp
 )

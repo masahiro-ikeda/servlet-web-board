@@ -9,84 +9,97 @@ class MessageDao(private val con: Connection) {
 
     fun getNextId(): Int {
 
-        val sqlBuilder: StringBuilder = StringBuilder()
-        sqlBuilder.append("SELECT              ")
-        sqlBuilder.append("  MAX(id) as max_id ")
-        sqlBuilder.append("FROM                ")
-        sqlBuilder.append("  message           ")
+        var ps: PreparedStatement? = null
+        var rs: ResultSet? = null
 
-        val ps: PreparedStatement = con.prepareStatement(sqlBuilder.toString())
-        val rs: ResultSet = ps.executeQuery()
+        try {
+            val sqlBuilder: StringBuilder = StringBuilder()
+            sqlBuilder.append("SELECT              ")
+            sqlBuilder.append("  MAX(id) as max_id ")
+            sqlBuilder.append("FROM                ")
+            sqlBuilder.append("  message           ")
 
-        val nextId: Int =
-                if (rs.next()) rs.getInt("max_id") + 1
-                else 1
+            ps = con.prepareStatement(sqlBuilder.toString())
+            rs = ps.executeQuery()
 
-        ps.close()
-        rs.close()
+            val nextId: Int =
+                    if (rs.next()) rs.getInt("max_id") + 1
+                    else 1
 
-        return nextId
+            return nextId
+        } finally {
+            ps!!.close()
+            rs!!.close()
+        }
     }
 
     fun selectMessage(): MutableList<MessageEntity> {
 
         val list: MutableList<MessageEntity> = mutableListOf()
+        var ps: PreparedStatement? = null
+        var rs: ResultSet? = null
 
-        val sqlBuilder: StringBuilder = StringBuilder()
-        sqlBuilder.append("SELECT              ")
-        sqlBuilder.append("  id, ")
-        sqlBuilder.append("  name ")
-        sqlBuilder.append("  text, ")
-        sqlBuilder.append("  created_at ")
-        sqlBuilder.append("FROM                ")
-        sqlBuilder.append("  message           ")
-        sqlBuilder.append("ORDER BY           ")
-        sqlBuilder.append("  id           ")
+        try {
+            val sqlBuilder: StringBuilder = StringBuilder()
+            sqlBuilder.append("SELECT       ")
+            sqlBuilder.append("  id,        ")
+            sqlBuilder.append("  name,      ")
+            sqlBuilder.append("  text,      ")
+            sqlBuilder.append("  created_at ")
+            sqlBuilder.append("FROM         ")
+            sqlBuilder.append("  message    ")
+            sqlBuilder.append("ORDER BY     ")
+            sqlBuilder.append("  id         ")
 
-        val ps: PreparedStatement = con.prepareStatement(sqlBuilder.toString())
-        val rs: ResultSet = ps.executeQuery()
+            ps = con.prepareStatement(sqlBuilder.toString())
+            rs = ps.executeQuery()
 
-        while (rs.next()){
-            val entity: MessageEntity = MessageEntity(
-                    rs.getInt("id"),
-                    rs.getString("name"),
-                    rs.getString("text"),
-                    rs.getDate("created_at")
-            )
-            list.add(entity)
+            while (rs.next()) {
+                val entity: MessageEntity = MessageEntity(
+                        rs.getInt("id"),
+                        rs.getString("name"),
+                        rs.getString("text"),
+                        rs.getTimestamp("created_at")
+                )
+                list.add(entity)
+            }
+            return list
+
+        } finally {
+            ps!!.close()
+            rs!!.close()
         }
-
-        ps.close()
-        rs.close()
-
-        return list
     }
 
     fun insertMessage(entity: MessageEntity): Boolean {
 
-        val sqlBuilder: StringBuilder = StringBuilder()
-        sqlBuilder.append("INSERT INTO message ( ")
-        sqlBuilder.append("  id, ")
-        sqlBuilder.append("  name, ")
-        sqlBuilder.append("  text, ")
-        sqlBuilder.append("  created_at ")
-        sqlBuilder.append(") VALUES (               ")
-        sqlBuilder.append("  ?,           ")
-        sqlBuilder.append("  ?,           ")
-        sqlBuilder.append("  ?,           ")
-        sqlBuilder.append("  ?           ")
-        sqlBuilder.append(")           ")
+        var ps: PreparedStatement? = null
 
-        val ps: PreparedStatement = con.prepareStatement(sqlBuilder.toString())
-        ps.setInt(0, entity.id)
-        ps.setString(1, entity.name)
-        ps.setString(2, entity.text)
-        ps.setDate(0, entity.dateTime)
+        try {
+            val sqlBuilder: StringBuilder = StringBuilder()
+            sqlBuilder.append("INSERT INTO message ( ")
+            sqlBuilder.append("  id,                 ")
+            sqlBuilder.append("  name,               ")
+            sqlBuilder.append("  text,               ")
+            sqlBuilder.append("  created_at          ")
+            sqlBuilder.append(") VALUES (            ")
+            sqlBuilder.append("  ?,                  ")
+            sqlBuilder.append("  ?,                  ")
+            sqlBuilder.append("  ?,                  ")
+            sqlBuilder.append("  ?                   ")
+            sqlBuilder.append(")                     ")
 
-        val result: Boolean = ps.execute()
+            ps = con.prepareStatement(sqlBuilder.toString())
+            ps.setInt(1, entity.id)
+            ps.setString(2, entity.name)
+            ps.setString(3, entity.text)
+            ps.setTimestamp(4, entity.created_at)
 
-        ps.close()
+            val result: Int = ps.executeUpdate()
+            return (result == 1)
 
-        return result
+        } finally {
+            ps!!.close()
+        }
     }
 }
